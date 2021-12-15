@@ -2,7 +2,7 @@
 const { nanoid } = require('nanoid');
 const books = require('./books');
 
-// fungsi untuk menambah books
+/* Handler untuk menambahkan buku */
 const addBookHandler = (request, h) => {
   const {
     name, year, author, summary, publisher, pageCount, readPage, reading,
@@ -34,10 +34,11 @@ const addBookHandler = (request, h) => {
 
   books.push(newBook);
 
-  const isSuccess = books.filter((note) => note.id === id).length > 0;
+  const isSuccess = books.filter((book) => book.id === id).length > 0;
 
   // Client tidak melampirkan properti name pada request body
   if (name === undefined) {
+    books.pop(newBook);
     const response = h.response({
       status: 'fail',
       message: 'Gagal menambahkan buku. Mohon isi nama buku',
@@ -49,6 +50,7 @@ const addBookHandler = (request, h) => {
   /* Client melampirkan nilai properti readPage yang
   lebih besar dari nilai properti pageCount */
   if (readPage > pageCount) {
+    books.pop(newBook);
     const response = h.response({
       status: 'fail',
       message: 'Gagal menambahkan buku. readPage tidak boleh lebih besar dari pageCount',
@@ -79,11 +81,41 @@ const addBookHandler = (request, h) => {
   return response;
 };
 
-const getAllBooksHandler = () => ({
-  status: 'success',
-  data: {
-    books,
-  },
-});
+/* Handler untuk mendapatkan semua buku yang sudah ditambahkan */
+const getAllBooksHandler = () => {
+  const response = {
+    status: 'success',
+    data: {
+      books: books.map((b) => ({
+        id: b.id,
+        name: b.name,
+        publisher: b.publisher,
+      })),
+    },
+  };
+  return response;
+};
 
-module.exports = { addBookHandler, getAllBooksHandler };
+// Handler untuk menampilkan satu book berdasarkan id yang dipilih
+const getBookByIdHandler = (request, h) => {
+  const { id } = request.params;
+
+  const book = books.filter((n) => n.id === id)[0];
+
+  if (book !== undefined) {
+    return {
+      status: 'success',
+      data: {
+        book,
+      },
+    };
+  }
+
+  const response = h.response({
+    status: 'fail',
+    message: 'Buku tidak ditemukan',
+  });
+  response.code(404);
+  return response;
+};
+module.exports = { addBookHandler, getAllBooksHandler, getBookByIdHandler };
